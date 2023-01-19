@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Sum, Avg
 from django.utils.text import slugify
 from .fileschek import *
 
@@ -68,8 +68,8 @@ class Anime(models.Model):
                                    unique=True)
     original_anime_name = models.SlugField(unique=True)  # this field must be filled exclusively
     cover_anime = models.ImageField(
-        # storage=OverWriteStorage(),
-        # upload_to=lambda instance, filename: upload_cover(instance, filename, 'cover_anime')
+        storage=OverWriteStorage(),
+        upload_to=lambda instance, filename: upload_cover(instance, filename, 'cover_anime')
     )
     description_anime = models.TextField()
     producer_anime = models.ManyToManyField(Producer)
@@ -84,6 +84,13 @@ class Anime(models.Model):
     def save(self, *args, **kwargs):
         self.original_anime_name = slugify(self.title_anime)
         super(Anime, self).save(*args, **kwargs)
+
+    @property
+    def average_rating(self):
+        """This method is needed to calculate the average rating value"""
+        if hasattr(self, '_average_rating'):
+            return self._average_rating
+        return self.reviews.aggregate(Avg('rating_for_anime'))
 
     @property
     def average_season(self):
@@ -124,7 +131,7 @@ class AnimeSeason(models.Model):
         return self.anime_season.aggregate(Sum('episode'))
 
     def __str__(self):
-        return f'{self.season_anime}_{self.season_number}'
+        return f'{self.season_anime}_season{self.season_number}'
 
 
 class AnimeEpisode(models.Model):
@@ -136,8 +143,8 @@ class AnimeEpisode(models.Model):
     anime = models.ForeignKey(Anime,
                               on_delete=models.CASCADE)
     anime_video = models.FileField(
-        # storage=OverWriteStorage(),
-        # upload_to=lambda instance, filename: upload_episode(instance, filename, 'anime_video')
+        storage=OverWriteStorage(),
+        upload_to=lambda instance, filename: upload_episode(instance, filename, 'anime_video')
     )
     episode_duration = models.DurationField()
     voice_acting_of_the_episode = models.ForeignKey(VoiceActing,
@@ -164,8 +171,8 @@ class AnimeMovie(models.Model):
                                                         on_delete=models.CASCADE)
     anime_movie = models.ForeignKey(Anime, on_delete=models.CASCADE)
     anime_movie_video = models.FileField(
-        # storage=OverWriteStorage(),
-        # upload_to=lambda instance, filename: upload_movie(instance, filename, 'anime_movie_video')
+        storage=OverWriteStorage(),
+        upload_to=lambda instance, filename: upload_movie(instance, filename, 'anime_movie_video')
         )
     movie_duration = models.DurationField()
     producer_anime_of_the_movie = models.ManyToManyField(Producer)
@@ -178,7 +185,7 @@ class AnimeMovie(models.Model):
         return self.title_movie
 
 
-USER_MOVIE_RATING = (
+ANIME_RATING = (
         (Decimal("1.0"), "★☆☆☆☆☆☆☆☆☆ (1/10)"),
         (Decimal("2.0"), "★★☆☆☆☆☆☆☆☆ (2/10)"),
         (Decimal("3.0"), "★★★☆☆☆☆☆☆☆ (3/10)"),
@@ -199,7 +206,7 @@ class Review(models.Model):
     review_text = models.TextField()
     rating_for_anime = models.DecimalField(max_digits=3,
                                            decimal_places=1,
-                                           choices=USER_MOVIE_RATING,
+                                           choices=ANIME_RATING,
                                            default=5.0)
     anime = models.ForeignKey(Anime,
                               on_delete=models.CASCADE,
