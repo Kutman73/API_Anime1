@@ -1,83 +1,29 @@
-import hashlib
 import os
+from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from api_anime01 import settings
-from django.http import Http404
 
 
-def upload_cover(instance, filename, fieldname):
-    format_file = os.path.splitext(filename)[1].lower()
-    if format_file != '.png':
-        return Http404()
-
-    name_of_the_anime = instance.original_anime_name.lower()
-    hash256 = hashlib.sha256()
-    file = getattr(instance, fieldname)
-    path = f"/home/kutu/PycharmProjects/api_anime/media/cover/{name_of_the_anime}/{file}"
-
-    if os.path.exists(path):
-        print("file is already")  # if such file already exists it will not add this file
-
-    for byte_chunk in file.chunks():
-        hash256.update(byte_chunk)
-
-    encrypted_name_of_the_anime = hash256.hexdigest()
-    file_address = os.path.join(
-        name_of_the_anime,
-        encrypted_name_of_the_anime + format_file,
-    )
-    return file_address
+def check_file_anime_cover_size(file_object) -> None:
+    file_limit = 3  # field is a Byte
+    if file_object.size > file_limit * 1024 * 1024:
+        raise ValidationError(f"Max size file {file_limit}MB")
 
 
-def upload_movie(instance, filename, fieldname):
-    format_file = os.path.splitext(filename)[1].lower()
-    if format_file != '.mp4':
-        return Http404()
-
-    name_of_the_anime = instance.anime_movie.original_anime_name.lower()
-    hash256 = hashlib.sha256()
-    file = getattr(instance, fieldname)
-    path = f"/home/kutu/PycharmProjects/api_anime/media/movie/{name_of_the_anime}/{file}"
-
-    if os.path.exists(path):
-        print("file is already")  # if such file already exists it will not add this file
-
-    for byte_chunk in file.chunks():
-        hash256.update(byte_chunk)
-
-    encrypted_name_of_the_anime = hash256.hexdigest()
-    file_address = os.path.join(
-        name_of_the_anime,
-        encrypted_name_of_the_anime + format_file,
-    )
-    return file_address
+def get_path_to_cover_anime(instance, file) -> str:
+    """ The path to the file
+        Path format: media/(original_anime_name)/cover/(photo).png
+    """
+    return f"{instance.original_anime_name}/cover/{file}"
 
 
-def upload_episode(instance, filename, fieldname):
-    format_file = os.path.splitext(filename)[1].lower()
-    if format_file != '.mp4':
-        return Http404()
+def get_path_to_movie(instance, file) -> str:
+    return f"{instance.anime_movie.original_anime_name}/movie/{file}"
 
-    name_of_the_anime = instance.anime.original_anime_name.lower()
-    season_number = instance.anime_season.season_number
-    hash256 = hashlib.sha256()
-    file = getattr(instance, fieldname)
-    path = f"/home/kutu/PycharmProjects/api_anime/media/" \
-           f"{name_of_the_anime}/season-{season_number}/{file}"
 
-    if os.path.exists(path):
-        print("file is already")  # if such file already exists it will not add
-
-    for byte_chunk in file.chunks():
-        hash256.update(byte_chunk)
-
-    encrypted_name_of_the_anime = hash256.hexdigest()
-    file_address = os.path.join(
-        name_of_the_anime,
-        str(season_number),
-        encrypted_name_of_the_anime + format_file,
-    )
-    return file_address
+def get_path_to_episode(instance, file) -> str:
+    return f"{instance.anime.original_anime_name}" \
+           f"/season-{instance.anime_season.season_number}/episode/{file}"
 
 
 class OverWriteStorage(FileSystemStorage):

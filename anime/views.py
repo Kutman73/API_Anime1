@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from anime.serializers import *
 from anime.models import *
 from rest_framework.viewsets import *
-from rest_framework.decorators import action
 
 
 class AnimeModelViewSet(ModelViewSet):

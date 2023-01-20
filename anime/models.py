@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum, Avg
 from django.utils.text import slugify
+from django.core.validators import FileExtensionValidator
 from .fileschek import *
 
 
@@ -10,8 +11,6 @@ class Genre(models.Model):
     """Creation a genre model"""
     genre_name = models.CharField(max_length=50,
                                   unique=True)
-    creation_date = models.DateField(auto_now=True)
-    number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return self.genre_name
@@ -21,8 +20,6 @@ class Theme(models.Model):
     """Creation a theme model"""
     theme_name = models.CharField(max_length=55,
                                   unique=True)
-    creation_date = models.DateField(auto_now=True)
-    number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return self.theme_name
@@ -32,8 +29,6 @@ class Producer(models.Model):
     """Creation a producer model"""
     producer_name = models.CharField(max_length=100,
                                      unique=True)
-    creation_date = models.DateField(auto_now=True)
-    number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return self.producer_name
@@ -43,8 +38,6 @@ class VoiceActing(models.Model):
     """Creation a voice acting model"""
     voice_acting = models.CharField(max_length=100,
                                     unique=True)
-    creation_date = models.DateField(auto_now=True)
-    number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return self.voice_acting
@@ -53,8 +46,6 @@ class VoiceActing(models.Model):
 class StatusAnime(models.Model):
     status = models.CharField(max_length=50,
                               unique=True)
-    creation_date = models.DateField(auto_now=True)
-    number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return self.status
@@ -69,7 +60,9 @@ class Anime(models.Model):
     original_anime_name = models.SlugField(unique=True)  # this field must be filled exclusively
     cover_anime = models.ImageField(
         storage=OverWriteStorage(),
-        upload_to=lambda instance, filename: upload_cover(instance, filename, 'cover_anime')
+        validators=[FileExtensionValidator(allowed_extensions=['png']), check_file_anime_cover_size],
+        upload_to=get_path_to_cover_anime,
+        unique=True
     )
     description_anime = models.TextField()
     producer_anime = models.ManyToManyField(Producer)
@@ -144,7 +137,9 @@ class AnimeEpisode(models.Model):
                               on_delete=models.CASCADE)
     anime_video = models.FileField(
         storage=OverWriteStorage(),
-        upload_to=lambda instance, filename: upload_episode(instance, filename, 'anime_video')
+        validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
+        upload_to=get_path_to_episode,
+        unique=True
     )
     episode_duration = models.DurationField()
     voice_acting_of_the_episode = models.ForeignKey(VoiceActing,
@@ -172,7 +167,9 @@ class AnimeMovie(models.Model):
     anime_movie = models.ForeignKey(Anime, on_delete=models.CASCADE)
     anime_movie_video = models.FileField(
         storage=OverWriteStorage(),
-        upload_to=lambda instance, filename: upload_movie(instance, filename, 'anime_movie_video')
+        validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
+        upload_to=get_path_to_movie,
+        unique=True
         )
     movie_duration = models.DurationField()
     producer_anime_of_the_movie = models.ManyToManyField(Producer)
