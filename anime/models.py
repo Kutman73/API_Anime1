@@ -60,7 +60,8 @@ class Anime(models.Model):
     original_anime_name = models.SlugField(unique=True)  # this field must be filled exclusively
     cover_anime = models.ImageField(
         storage=OverWriteStorage(),
-        validators=[FileExtensionValidator(allowed_extensions=['png']), check_file_anime_cover_size],
+        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpeg']),
+                    check_file_anime_cover_size],
         upload_to=get_path_to_cover_anime,
         unique=True
     )
@@ -80,7 +81,6 @@ class Anime(models.Model):
 
     @property
     def average_rating(self):
-        """This method is needed to calculate the average rating value"""
         if hasattr(self, '_average_rating'):
             return self._average_rating
         return self.reviews.aggregate(Avg('rating_for_anime'))
