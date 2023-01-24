@@ -1,111 +1,197 @@
 import hashlib
 import os
+import pymediainfo
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from api_anime01 import settings
+from typing import Union
 
 
-def file_hashing(instance, filename: str, fieldname: str) -> str:
+class FileStorage(FileSystemStorage):
     """
-    Receives 'instance', is a class model
-        type: class(model class instance), 'filename' is a filename,
-        type: str(filename), 'fieldname' is a 'instance' field,
-        type: str(instance fieldname).
-    Return path renamed the filename to its hash(hashlib.sha256),
-        type: str.
+    This class provides a utility for storing files in a Django project.
     """
-    hash256 = hashlib.sha256()
-    format_file = os.path.splitext(filename)[1].lower()
-    field_file = getattr(instance, fieldname)
-    for byte_chunk in field_file.chunks():
-        hash256.update(byte_chunk)
-    encrypted_name_of_the_anime = hash256.hexdigest()
-    return f"{encrypted_name_of_the_anime + format_file}"
+    def __init__(self, location=settings.MEDIA_ROOT):
+        """
+        Initializes the FileStorage object.
+
+        Parameters:
+            self : FileStorage
+                The FileStorage object.
+            location (str): the directory where files will be stored. Defaults to the MEDIA_ROOT
+            specified in the Django settings.
+        """
+        super().__init__(location=location)
+
+    @staticmethod
+    def checking_video_quality(instance, fieldname: str) -> str:
+        """
+        Checking_video_quality is a method of the FileStorage class that is used to check the
+        video quality of a file.
+
+        The method takes in two arguments:
+        - instance: an instance of a class model that contains the file.
+        - fieldname: a string representing the name of the field on the class model instance that
+        contains the file.
+
+        The method uses the pymediainfo library to parse the file and extract information about
+        the video track. It then checks the height (resolution) and bitrate of the video track and
+        compares it to predefined values to determine the video quality.
+        """
+        video_file = getattr(instance, fieldname)
+        media_info = pymediainfo.MediaInfo.parse(video_file)
+        video_track = media_info.tracks[1]
+        resolution = video_track.height
+        bitrate = video_track.bit_rate
+
+        if resolution >= 1080 and bitrate >= 4000:
+            return "1080p_4k"
+        elif resolution >= 720 and bitrate >= 2000:
+            return "720p_2k"
+        elif resolution >= 360 and bitrate >= 1000:
+            return "360p_1k"
+        elif resolution >= 240 and bitrate >= 500:
+            return "240p_500k"
+        else:
+            return "other"
+
+    @staticmethod
+    def file_hashing(instance, fieldname: str) -> str:
+        """
+        Hashes a file's name and returns the hash as a string.
+
+        Parameters:
+            instance (class): A class model instance.
+            fieldname (str): The field name on the class model instance.
+
+        Returns:
+            str: The hashed file name.
+        """
+        hash256 = hashlib.sha256()
+        field_file = getattr(instance, fieldname)
+        for byte_chunk in field_file.chunks():
+            hash256.update(byte_chunk)
+        encrypted_name_of_the_anime = hash256.hexdigest()
+        return f"{encrypted_name_of_the_anime}"
+
+    @staticmethod
+    def file_exist_check(path: str) -> Union[bool, str]:
+        """
+        Check if a file already exists in the given path.
+
+        Parameters:
+            path (str): The file path.
+
+        Returns:
+            bool : False if the file already exists at the given path,
+            str : The path if the file does not exist.
+        """
+        if os.path.isfile(path):
+            return False
+        return path
+
+    @staticmethod
+    def check_file_anime_cover_size(file_object) -> ValidationError or None:
+        """
+        Check if the file size of the file_object is within the limit.
+
+        Parameters:
+            file_object: django.db.models.fields.files.ImageFieldFile.
+
+        Returns:
+            ValidationError: if file size exceeds the file_limit
+            None: if file size is within limit
+        """
+        file_limit = 3  # field is a Byte
+        if file_object.size > file_limit * 1024 * 1024:
+            raise ValidationError(f"Max size file {file_limit}MB")
+
+    @staticmethod
+    def get_path_to_cover_anime(instance, filename) -> str:
+        """
+        Returns the path for storing the anime movie.
+
+        Parameters:
+            instance (class): A class model instance.
+            filename (str): The file's name.
+
+        Returns:
+            str: The path where the anime movie should be stored.
+        """
+        path_to_cover_anime = f"{instance.original_anime_name}/cover/"
+        hashed_filename = FileStorage.file_hashing(instance, 'cover_anime')
+        path = os.path.join(path_to_cover_anime, hashed_filename)
+        end_path = FileStorage.file_exist_check(path + '.phg')
+        if end_path:
+            return end_path
+        return ''
+
+    @staticmethod
+    def get_path_to_movie(instance, filename) -> str:
+        """
+        Returns the path for storing the anime movie.
+
+        Parameters:
+            instance (class): A class model instance.
+            filename (str): The file's name.
+
+        Returns:
+            str: The path where the anime movie should be stored.
+        """
+        path_to_movie = f"{instance.anime_movie.original_anime_name}/movie/"
+        hashed_filename = FileStorage.file_hashing(instance, 'anime_movie_video')
+        video_quality = FileStorage.checking_video_quality(instance, 'anime_movie_video')
+        path = os.path.join(path_to_movie, hashed_filename + video_quality + '.mp4')
+        end_path = FileStorage.file_exist_check(path)
+        if end_path:
+            return end_path
+        return ''
+
+    @staticmethod
+    def get_path_to_episode(instance, filename) -> str:
+        """
+        Returns the path for storing the anime episode.
+
+        Parameters:
+            instance (class): A class model instance.
+            filename (str): The file's name.
+
+        Returns:
+            str: The path where the anime episode should be stored.
+        """
+        path_to_episode = f"{instance.anime.original_anime_name}/season-" \
+                          f"{instance.anime_season.season_number}/"
+        hashed_filename = FileStorage.file_hashing(instance, 'anime_video')
+        video_quality = FileStorage.checking_video_quality(instance, 'anime_video')
+        path = os.path.join(path_to_episode, hashed_filename)
+        end_path = FileStorage.file_exist_check(path + video_quality + '.mp4')
+        if end_path:
+            return end_path
+        return ''
 
 
-def file_exist_check(path: str) -> bool or int:
+class OverWriteStorage(FileStorage):
     """
-    Receives 'path',
-        type: str.
-    Return False if a file exists at this 'path',
-        else return 'path'.
-    Note!!!
-        This function checks files exactly by hash.
+    A storage class that overwrites files with the same name when uploading new files.
     """
-    if os.path.isfile(path):
-        return False
-    return path
 
+    def __init__(self):
+        """
+        Initializes the storage by calling the parent class's __init__ method.
+        """
+        super(OverWriteStorage, self).__init__()
 
-def check_file_anime_cover_size(file_object) -> ValidationError or None:
-    """
-    Receives 'file_object',
-        type: django.db.models.fields.files.ImageFieldFile.
-    Checking data size.
-    Return ValidationError if file size in excess of 'file_limit'
-    """
-    file_limit = 3  # field is a Byte
-    if file_object.size > file_limit * 1024 * 1024:
-        raise ValidationError(f"Max size file {file_limit}MB")
+    def get_available_name(self, name: str, max_length: int = 100) -> str:
+        """
+        Determines the available name for a file being stored.
 
+        Parameters:
+            - name (str): The desired name of the file being stored.
+            - max_length (int): The maximum length of the file name. Defaults to 100.
 
-def get_path_to_cover_anime(instance, filename) -> str:
-    """
-    Receives 'instance' is a class model,
-        type: class(model class instance),
-    'filename' is the name of the uploaded file with extension,
-        type: str(filename).
-    Return path, renamed file name,
-        type: str.
-    """
-    path_to_cover_anime = f"{instance.original_anime_name}/cover/"
-    hashed_filename = file_hashing(instance, filename, 'cover_anime')
-    path = os.path.join(path_to_cover_anime, hashed_filename)
-    end_path = file_exist_check(path)
-    if end_path:
-        return end_path
-    return ''
-
-
-def get_path_to_movie(instance, filename) -> str:
-    """
-    Receives 'instance' is a class model,
-        type: class(model class instance),
-    'filename' is the name of the uploaded file with extension,
-        type: str(filename).
-    Return path, renamed file name,
-        type: str.
-    """
-    path_to_movie = f"{instance.anime_movie.original_anime_name}/movie/"
-    hashed_filename = file_hashing(instance, filename, 'anime_movie_video')
-    path = os.path.join(path_to_movie, hashed_filename)
-    end_path = file_exist_check(path)
-    if end_path:
-        return end_path
-    return ''
-
-
-def get_path_to_episode(instance, filename) -> str:
-    """
-    Receives 'instance' is a class model,
-        type: class(model class instance),
-    'filename' is the name of the uploaded file with extension,
-        type: str(filename).
-    Return path, renamed file name,
-        type: str.
-    """
-    path_to_episode = f"{instance.anime.original_anime_name}/season-" \
-                      f"{instance.anime_season.season_number}/"
-    hashed_filename = file_hashing(instance, filename, 'anime_video')
-    path = os.path.join(path_to_episode, hashed_filename)
-    end_path = file_exist_check(path)
-    if end_path:
-        return end_path
-    return ''
-
-
-class OverWriteStorage(FileSystemStorage):
-    def get_available_name(self, name, max_length=100):
+        Returns:
+            str: The final name of the file.
+        """
         if self.exists(name):
-            os.remove(os.path.join(settings.MEDIA_ROOT, name))
+            os.remove(os.path.join(self.location, name))
         return name

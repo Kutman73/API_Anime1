@@ -8,31 +8,31 @@ from anime.models import *
 class GenreSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
         model = Genre
-        exclude = 'number'.split()
+        fields = '__all__'
 
 
 class ThemeSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
         model = Theme
-        exclude = 'number'.split()
+        fields = '__all__'
 
 
 class ProducerSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
         model = Producer
-        exclude = 'number'.split()
+        fields = '__all__'
 
 
 class VoiceActingSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
         model = VoiceActing
-        exclude = 'number'.split()
+        fields = '__all__'
 
 
 class StatusAnimeSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
         model = StatusAnime
-        exclude = 'number'.split()
+        fields = '__all__'
 
 
 class AnimeSerializers(serializers.ModelSerializer):

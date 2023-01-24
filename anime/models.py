@@ -60,10 +60,9 @@ class Anime(models.Model):
     original_anime_name = models.SlugField(unique=True)  # this field must be filled exclusively
     cover_anime = models.ImageField(
         storage=OverWriteStorage(),
-        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpeg']),
-                    check_file_anime_cover_size],
-        upload_to=get_path_to_cover_anime,
-        unique=True
+        validators=[FileExtensionValidator(allowed_extensions=['png']),
+                    FileStorage.check_file_anime_cover_size],
+        upload_to=FileStorage.get_path_to_cover_anime
     )
     description_anime = models.TextField()
     producer_anime = models.ManyToManyField(Producer)
@@ -138,8 +137,7 @@ class AnimeEpisode(models.Model):
     anime_video = models.FileField(
         storage=OverWriteStorage(),
         validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
-        upload_to=get_path_to_episode,
-        unique=True
+        upload_to=FileStorage.get_path_to_episode
     )
     episode_duration = models.DurationField()
     voice_acting_of_the_episode = models.ForeignKey(VoiceActing,
@@ -168,8 +166,7 @@ class AnimeMovie(models.Model):
     anime_movie_video = models.FileField(
         storage=OverWriteStorage(),
         validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
-        upload_to=get_path_to_movie,
-        unique=True
+        upload_to=FileStorage.get_path_to_movie
         )
     movie_duration = models.DurationField()
     producer_anime_of_the_movie = models.ManyToManyField(Producer)
