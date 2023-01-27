@@ -45,13 +45,15 @@ class FileStorage(FileSystemStorage):
         bitrate = video_track.bit_rate
 
         if resolution >= 1080 and bitrate >= 4000:
-            return "1080p_4k"
+            return f"{instance.episode_number}-1080p-"
         elif resolution >= 720 and bitrate >= 2000:
-            return "720p_2k"
+            return f"{instance.episode_number}-720p-"
+        elif resolution >= 480 and bitrate >= 1300:
+            return f"{instance.episode_number}-480p-"
         elif resolution >= 360 and bitrate >= 1000:
-            return "360p_1k"
+            return f"{instance.episode_number}-360p-"
         elif resolution >= 240 and bitrate >= 500:
-            return "240p_500k"
+            return f"{instance.episode_number}-240p-"
         else:
             return "other"
 
@@ -71,8 +73,8 @@ class FileStorage(FileSystemStorage):
         field_file = getattr(instance, fieldname)
         for byte_chunk in field_file.chunks():
             hash256.update(byte_chunk)
-        encrypted_name_of_the_anime = hash256.hexdigest()
-        return f"{encrypted_name_of_the_anime}"
+        hashed_name_of_the_anime = hash256.hexdigest()
+        return f"{hashed_name_of_the_anime}"
 
     @staticmethod
     def file_exist_check(path: str) -> Union[bool, str]:
@@ -118,10 +120,11 @@ class FileStorage(FileSystemStorage):
         Returns:
             str: The path where the anime movie should be stored.
         """
+        format_file = os.path.splitext(filename)[1].lower()
         path_to_cover_anime = f"{instance.original_anime_name}/cover/"
         hashed_filename = FileStorage.file_hashing(instance, 'cover_anime')
         path = os.path.join(path_to_cover_anime, hashed_filename)
-        end_path = FileStorage.file_exist_check(path + '.phg')
+        end_path = FileStorage.file_exist_check(path + format_file)
         if end_path:
             return end_path
         return ''
@@ -138,10 +141,11 @@ class FileStorage(FileSystemStorage):
         Returns:
             str: The path where the anime movie should be stored.
         """
+        format_file = os.path.splitext(filename)[1].lower()
         path_to_movie = f"{instance.anime_movie.original_anime_name}/movie/"
         hashed_filename = FileStorage.file_hashing(instance, 'anime_movie_video')
         video_quality = FileStorage.checking_video_quality(instance, 'anime_movie_video')
-        path = os.path.join(path_to_movie, hashed_filename + video_quality + '.mp4')
+        path = os.path.join(path_to_movie, hashed_filename + video_quality + format_file)
         end_path = FileStorage.file_exist_check(path)
         if end_path:
             return end_path
@@ -159,14 +163,17 @@ class FileStorage(FileSystemStorage):
         Returns:
             str: The path where the anime episode should be stored.
         """
+        format_file = os.path.splitext(filename)[1].lower()
         path_to_episode = f"{instance.anime.original_anime_name}/season-" \
-                          f"{instance.anime_season.season_number}/"
+                          f"{instance.anime_season.season_number}/episode-" \
+                          f"{instance.episode_number}/"
         hashed_filename = FileStorage.file_hashing(instance, 'anime_video')
         video_quality = FileStorage.checking_video_quality(instance, 'anime_video')
-        path = os.path.join(path_to_episode, hashed_filename)
-        end_path = FileStorage.file_exist_check(path + video_quality + '.mp4')
-        if end_path:
-            return end_path
+        check_path_to_episode = FileStorage.file_exist_check(
+            os.path.join(path_to_episode, video_quality + hashed_filename + format_file)
+        )
+        if check_path_to_episode:
+            return check_path_to_episode
         return ''
 
 
