@@ -3,6 +3,36 @@ from rest_framework.response import Response
 from anime.serializers import *
 from anime.models import *
 from rest_framework.viewsets import *
+from .services import base
+from django.http import FileResponse
+from rest_framework.decorators import action
+from rest_framework.parsers import *
+from rest_framework import permissions
+from anime.validateserializers import *
+
+
+class FileViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def list(self, request, **kwargs):
+        file_list = base(**kwargs)
+        return Response(file_list)
+
+    @action(detail=True, methods=['get'])
+    def retrieve(self, request, **kwargs):
+        file_list = base(**kwargs)
+        requesttable_file_quality = str(kwargs['quality'])
+        for file in file_list:
+            if file[69:72] == requesttable_file_quality or \
+               file[69:73] == requesttable_file_quality:
+                file_path = f"{settings.BASE_DIR}/{file[22:]}"
+                file_response = FileResponse(open(file_path, 'rb'))
+                file_response['content_type'] = 'application/force-download'
+                file_response['Content-Disposition'] = 'attachment; filename=%s' % file[67:]
+                return file_response
+        return Response(status=status.HTTP_204_NO_CONTENT,
+                        data={'detail': 'No such file!'})
 
 
 class AnimeModelViewSet(ModelViewSet):

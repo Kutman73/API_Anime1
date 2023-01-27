@@ -2,7 +2,6 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum, Avg
-from django.utils.text import slugify
 from django.core.validators import FileExtensionValidator
 from .fileschek import *
 
@@ -60,7 +59,7 @@ class Anime(models.Model):
     original_anime_name = models.SlugField(unique=True)  # this field must be filled exclusively
     cover_anime = models.ImageField(
         storage=OverWriteStorage(),
-        validators=[FileExtensionValidator(allowed_extensions=['png']),
+        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg']),
                     FileStorage.check_file_anime_cover_size],
         upload_to=FileStorage.get_path_to_cover_anime
     )
@@ -73,10 +72,6 @@ class Anime(models.Model):
     release_date_anime = models.DateField()
     creation_date = models.DateField(auto_now=True)
     number = models.PositiveSmallIntegerField(default=1)  # это поле нужно для подсчета всех аниме
-
-    def save(self, *args, **kwargs):
-        self.original_anime_name = slugify(self.title_anime)
-        super(Anime, self).save(*args, **kwargs)
 
     @property
     def average_rating(self):
@@ -107,11 +102,12 @@ class AnimeSeason(models.Model):
     season_anime = models.ForeignKey(Anime,
                                      on_delete=models.CASCADE,
                                      related_name='seasons')
-    season_number = models.PositiveIntegerField(unique=True)
+    season_number = models.PositiveIntegerField()
     voiceover_of_the_season = models.ManyToManyField(VoiceActing)
     producer_of_the_season = models.ManyToManyField(Producer)
     season_title = models.CharField(max_length=100,
-                                    unique=True)
+                                    null=True,
+                                    blank=True)
     release_date_of_the_season = models.DateField()
     creation_date = models.DateField(auto_now=True)
     number = models.PositiveSmallIntegerField(default=1)
@@ -130,14 +126,14 @@ class AnimeEpisode(models.Model):
     """Creation a anime episode model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
-    title_episode = models.CharField(max_length=255,
-                                     unique=True)
+    title_episode = models.CharField(max_length=255)
     anime = models.ForeignKey(Anime,
                               on_delete=models.CASCADE)
     anime_video = models.FileField(
         storage=OverWriteStorage(),
         validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
-        upload_to=FileStorage.get_path_to_episode
+        upload_to=FileStorage.get_path_to_episode,
+        max_length=255
     )
     episode_duration = models.DurationField()
     voice_acting_of_the_episode = models.ForeignKey(VoiceActing,
@@ -145,7 +141,7 @@ class AnimeEpisode(models.Model):
     anime_season = models.ForeignKey(AnimeSeason,
                                      on_delete=models.CASCADE,
                                      related_name='anime_season')
-    episode_number = models.PositiveIntegerField(unique=True)
+    episode_number = models.PositiveIntegerField()
     release_date_of_the_episode = models.DateField()
     creation_date = models.DateField(auto_now=True)
     number = models.PositiveSmallIntegerField(default=1)

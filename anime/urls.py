@@ -21,6 +21,11 @@ urlpatterns = (
          EpisodeModelViewSet.as_view({'get': 'retrieve',
                                       'put': 'update',
                                       'delete': 'destroy'})),
+    path('<slug:original_anime_name>/season-<int:season>'
+         '/episode-<int:episode>/download/', FileViewSet.as_view({'get': 'list'})),
+    path('<slug:original_anime_name>/season-<int:season>'
+         '/episode-<int:episode>/download/<int:quality>/', FileViewSet.as_view({'get': 'retrieve'})),
+    path('', include(anime_router.urls)),
     path('<slug:original_anime_name>/movies/',
          AnimeMovieModelViewSet.as_view({'get': 'list',
                                          'post': 'create'})),
