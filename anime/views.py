@@ -9,10 +9,11 @@ from rest_framework.decorators import action
 from rest_framework.parsers import *
 from rest_framework import permissions
 from anime.validateserializers import *
+import glob
 
 
-class FileViewSet(ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+class DownloadEpisodeViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @action(detail=False, methods=['get'])
     def list(self, request, **kwargs):
@@ -22,17 +23,35 @@ class FileViewSet(ViewSet):
     @action(detail=True, methods=['get'])
     def retrieve(self, request, **kwargs):
         file_list = base(**kwargs)
-        requesttable_file_quality = str(kwargs['quality'])
-        for file in file_list:
-            if file[69:72] == requesttable_file_quality or \
-               file[69:73] == requesttable_file_quality:
-                file_path = f"{settings.BASE_DIR}/{file[22:]}"
-                file_response = FileResponse(open(file_path, 'rb'))
-                file_response['content_type'] = 'application/force-download'
-                file_response['Content-Disposition'] = 'attachment; filename=%s' % file[67:]
-                return file_response
+        if len(file_list) == 0:
+            return Response(status=status.HTTP_204_NO_CONTENT,
+                            data={'detail': 'No file(s) were for this episode'})
+        file_path = f"{str(settings.MEDIA_ROOT)}/{str(kwargs['original_anime_name'])}" \
+                    f"/season-{kwargs['season']}/episode-{kwargs['episode']}/"
+        files = glob.glob(file_path + '*' + kwargs['filename'] + '*')
+        if len(files) == 1:
+            file_location = files[0]
+            file_response = FileResponse(open(file_location, 'rb'))
+            file_response['content_type'] = 'application/force-download'
+            file_response['Content-Disposition'] = 'attachment; filename=%s' % file_location[84]
+            return file_response
+        if len(files) > 1:
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={'detail': 'Several such files were found according to the search results, '
+                                            'please enter a more accurate file name'})
+
+    @action(detail=True, methods=['get'])
+    def create(self, request, **kwargs):
+        project_base_directory = str(settings.BASE_DIR)
+        requesttable_file = request.data['file']
+        file_path = project_base_directory + requesttable_file[21:]
+        if os.path.isfile(file_path):
+            file_response = FileResponse(open(file_path, 'rb'))
+            file_response['content_type'] = 'application/force-download'
+            file_response['Content-Disposition'] = 'attachment; filename=%s' % file_path[67:]
+            return file_response
         return Response(status=status.HTTP_204_NO_CONTENT,
-                        data={'detail': 'No such file!'})
+                        data={'detail': 'File not exists'})
 
 
 class AnimeModelViewSet(ModelViewSet):
