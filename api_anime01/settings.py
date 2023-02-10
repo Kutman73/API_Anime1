@@ -1,12 +1,12 @@
-from os import path, getenv
+from os import path, environ
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = getenv('SECRET_KEY')
+SECRET_KEY = environ.get('SECRET_KEY')
 
-DEBUG = getenv('DEBUG', default=False)
+DEBUG = environ.get('DEBUG', default=False)
 
 ALLOWED_HOSTS = ['*']
 
@@ -72,11 +72,11 @@ WSGI_APPLICATION = 'api_anime01.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': getenv('DATABASE_NAME'),
-        'USER': getenv('DATABASE_USER'),
-        'PASSWORD': getenv('DATABASE_PASSWORD'),
-        'HOST': getenv('DATABASE_HOST'),
-        'PORT': getenv('DATABASE_PORT', default=5432)
+        'NAME': environ.get('DATABASE_NAME'),
+        'USER': environ.get('DATABASE_USER'),
+        'PASSWORD': environ.get('DATABASE_PASSWORD'),
+        'HOST': environ.get('DATABASE_HOST'),
+        'PORT': environ.get('DATABASE_PORT', default=5432)
     }
 }
 
