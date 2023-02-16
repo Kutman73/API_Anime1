@@ -1,12 +1,12 @@
-from os import path, environ
+from decouple import config
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = environ.get('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = environ.get('DEBUG', default=False)
+DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
@@ -21,8 +21,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'anime',
-    'users',
+    'apps.anime',
+    'apps.users',
 ]
 
 REST_FRAMEWORK = {
@@ -32,6 +32,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 12,
+    'DEFAULT_PERMISSION_CLASSES': [
+        'apps.anime.services.permissions.IsAdminOrReadOnly',
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
@@ -72,11 +75,11 @@ WSGI_APPLICATION = 'api_anime01.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': environ.get('DATABASE_NAME'),
-        'USER': environ.get('DATABASE_USER'),
-        'PASSWORD': environ.get('DATABASE_PASSWORD'),
-        'HOST': environ.get('DATABASE_HOST'),
-        'PORT': environ.get('DATABASE_PORT', default=5432)
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT', cast=int)
     }
 }
 

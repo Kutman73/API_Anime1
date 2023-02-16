@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
-from anime.models import *
+from apps.anime.models import *
 
 
 class GenreSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):

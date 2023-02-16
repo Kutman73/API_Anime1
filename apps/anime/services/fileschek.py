@@ -9,7 +9,7 @@ from django.db.models.fields.files import ImageFieldFile
 
 class FileCheck:
     @staticmethod
-    def file_exist_check(path: str) -> Union[bool, str]:
+    def check_file_exist(path: str) -> Union[bool, str]:
         """
         Check if a file already exists in the given path.
 
@@ -25,7 +25,7 @@ class FileCheck:
         return path
 
     @staticmethod
-    def check_file_anime_cover_size(file_object: ImageFieldFile) -> ValidationError or None:
+    def check_file_size(file_object: ImageFieldFile) -> ValidationError or None:
         """
         Check if the file size of the file_object is within the limit.
 
@@ -44,7 +44,7 @@ class FileCheck:
 
 class FileModify:
     @staticmethod
-    def adding_video_quality(instance, fieldname: str) -> str:
+    def get_video_quality(instance, fieldname: str) -> str:
         """
         Checking_video_quality is a method of the FileStorage class that is used to check the
         video quality of a file.
@@ -76,7 +76,7 @@ class FileModify:
             return "other"
 
     @staticmethod
-    def file_hashing(instance, fieldname: str) -> str:
+    def get_filename_hash(instance, fieldname: str) -> str:
         """
         Hashes a file's name and returns the hash as a string.
         Parameters:
@@ -108,9 +108,9 @@ class FilePath:
         """
         format_file = os.path.splitext(filename)[1].lower()
         path_to_cover_anime = f"{instance.original_anime_name}/cover/"
-        hashed_filename = FileModify.file_hashing(instance, 'cover_anime')
+        hashed_filename = FileModify.get_filename_hash(instance, 'cover_anime')
         path = os.path.join(path_to_cover_anime, hashed_filename)
-        end_path = FileCheck.file_exist_check(path + format_file)
+        end_path = FileCheck.check_file_exist(path + format_file)
         if end_path:
             return end_path
         return ''
@@ -129,10 +129,10 @@ class FilePath:
         """
         format_file = os.path.splitext(filename)[1].lower()
         path_to_movie = f"{instance.anime_movie.original_anime_name}/movie/"
-        hashed_filename = FileModify.file_hashing(instance, 'anime_movie_video')
-        video_quality = FileModify.adding_video_quality(instance, 'anime_movie_video')
+        hashed_filename = FileModify.get_filename_hash(instance, 'anime_movie_video')
+        video_quality = FileModify.get_video_quality(instance, 'anime_movie_video')
         path = os.path.join(path_to_movie, hashed_filename + video_quality + format_file)
-        end_path = FileCheck.file_exist_check(path)
+        end_path = FileCheck.check_file_exist(path)
         if end_path:
             return end_path
         return ''
@@ -153,9 +153,9 @@ class FilePath:
         path_to_episode = f"{instance.anime.original_anime_name}/season-" \
                           f"{instance.anime_season.season_number}/episode-" \
                           f"{instance.episode_number}/"
-        hashed_filename = FileModify.file_hashing(instance, 'anime_video')
-        video_quality = FileModify.adding_video_quality(instance, 'anime_video')
-        check_path_to_episode = FileCheck.file_exist_check(
+        hashed_filename = FileModify.get_filename_hash(instance, 'anime_video')
+        video_quality = FileModify.get_video_quality(instance, 'anime_video')
+        check_path_to_episode = FileCheck.check_file_exist(
             os.path.join(path_to_episode, video_quality + hashed_filename + format_file)
         )
         if check_path_to_episode:

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import *
+from .api.viewsets import *
 
 anime_router = routers.DefaultRouter()
 anime_router.register(r'', AnimeModelViewSet)

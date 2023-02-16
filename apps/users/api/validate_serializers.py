@@ -4,8 +4,8 @@ from rest_framework.exceptions import ValidationError
 
 
 class UserValidateSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=20)
-    password = serializers.CharField(min_length=2)
+    username = serializers.CharField(max_length=20, min_length=6)
+    password = serializers.CharField(min_length=8, max_length=128)
 
 
 class UserCreateSerializer(UserValidateSerializer):

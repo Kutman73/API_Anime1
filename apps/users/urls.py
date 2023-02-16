@@ -1,6 +1,5 @@
 from django.urls import path
-from .views import *
-
+from apps.users.api.apiviews import *
 
 urlpatterns = (
     path('authorization/', UserAuthorizationAPIView.as_view()),

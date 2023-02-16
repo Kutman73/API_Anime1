@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum, Avg
 from django.core.validators import FileExtensionValidator
-from .fileschek import *
+from apps.anime.services.fileschek import *
 
 
 class Genre(models.Model):
@@ -17,7 +17,7 @@ class Genre(models.Model):
 
 class Theme(models.Model):
     """Creation a theme model"""
-    theme_name = models.CharField(max_length=55,
+    theme_name = models.CharField(max_length=50,
                                   unique=True)
 
     def __str__(self):
@@ -25,7 +25,7 @@ class Theme(models.Model):
 
 
 class Producer(models.Model):
-    """Creation a producer model"""
+    """Producer model"""
     producer_name = models.CharField(max_length=100,
                                      unique=True)
 
@@ -34,7 +34,7 @@ class Producer(models.Model):
 
 
 class VoiceActing(models.Model):
-    """Creation a voice acting model"""
+    """Voice acting model"""
     voice_acting = models.CharField(max_length=100,
                                     unique=True)
 
@@ -43,6 +43,7 @@ class VoiceActing(models.Model):
 
 
 class StatusAnime(models.Model):
+    """Status anime model"""
     status = models.CharField(max_length=50,
                               unique=True)
 
@@ -51,7 +52,7 @@ class StatusAnime(models.Model):
 
 
 class Anime(models.Model):
-    """Creation a anime model"""
+    """Anime model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
     title_anime = models.CharField(max_length=255,
@@ -60,7 +61,7 @@ class Anime(models.Model):
     cover_anime = models.ImageField(
         storage=OverWriteStorage(),
         validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg']),
-                    FileCheck.check_file_anime_cover_size],
+                    FileCheck.check_file_exist],
         upload_to=FilePath.get_path_to_cover_anime
     )
     description_anime = models.TextField()
@@ -70,7 +71,8 @@ class Anime(models.Model):
     status_anime = models.ForeignKey(StatusAnime,
                                      on_delete=models.CASCADE)
     release_date_anime = models.DateField()
-    creation_date = models.DateField(auto_now=True)
+    update_date = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     number = models.PositiveSmallIntegerField(default=1)  # это поле нужно для подсчета всех аниме
 
     @property
@@ -96,7 +98,7 @@ class Anime(models.Model):
 
 
 class AnimeSeason(models.Model):
-    """Creation an anime season model"""
+    """Anime season model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
     season_anime = models.ForeignKey(Anime,
@@ -109,7 +111,8 @@ class AnimeSeason(models.Model):
                                     null=True,
                                     blank=True)
     release_date_of_the_season = models.DateField()
-    creation_date = models.DateField(auto_now=True)
+    update_date = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     number = models.PositiveSmallIntegerField(default=1)
 
     @property
@@ -123,7 +126,7 @@ class AnimeSeason(models.Model):
 
 
 class AnimeEpisode(models.Model):
-    """Creation a anime episode model"""
+    """Anime episode model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
     title_episode = models.CharField(max_length=255)
@@ -143,7 +146,8 @@ class AnimeEpisode(models.Model):
                                      related_name='anime_season')
     episode_number = models.PositiveIntegerField()
     release_date_of_the_episode = models.DateField()
-    creation_date = models.DateField(auto_now=True)
+    update_date = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
@@ -151,7 +155,7 @@ class AnimeEpisode(models.Model):
 
 
 class AnimeMovie(models.Model):
-    """Creation a anime movie model"""
+    """Anime movie model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
     title_movie = models.CharField(max_length=255,
@@ -168,7 +172,7 @@ class AnimeMovie(models.Model):
     producer_anime_of_the_movie = models.ManyToManyField(Producer)
     movie_number = models.PositiveIntegerField(unique=True)
     release_date_of_the_movie = models.DateField()
-    creation_date = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
@@ -190,7 +194,7 @@ ANIME_RATING = (
 
 
 class Review(models.Model):
-    """Creation a review model"""
+    """Review model"""
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE)
     review_text = models.TextField()
@@ -201,7 +205,7 @@ class Review(models.Model):
     anime = models.ForeignKey(Anime,
                               on_delete=models.CASCADE,
                               related_name='reviews')
-    creation_date = models.DateField(auto_now=True)
+    creation_date = models.DateField(auto_now_add=True)
     number = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):

@@ -4,6 +4,4 @@ __pycache__/
 .env
 templates
 media
-**/api
-**/management
-**/services
+**/migrations/
