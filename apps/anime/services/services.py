@@ -2,7 +2,7 @@ from api_anime01 import settings
 import os
 
 
-def get_file(path: str) -> list:
+def get_local_files(path: str) -> list:
     file_list = []
     prefix_length = str(settings.MEDIA_ROOT)
     project_url = "http://127.0.0.1:8000/media/"
