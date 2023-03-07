@@ -3,43 +3,42 @@ from rest_framework import routers
 from .api.viewsets import *
 
 anime_router = routers.DefaultRouter()
-anime_router.register(r'', AnimeModelViewSet)
+anime_router.register(r'anime', AnimeModelViewSet)
 
 urlpatterns = (
     path('', include(anime_router.urls)),
-    path('<slug:original_anime_name>/seasons/',
+    path('anime/<slug:slug>/seasons/',
          SeasonModelViewSet.as_view({'get': 'list',
                                      'post': 'create'})),
-    path('<slug:original_anime_name>/season-<int:pk>/',
+    path('anime/<slug:slug>/season-<int:pk>/',
          SeasonModelViewSet.as_view({'get': 'retrieve',
                                      'put': 'update',
                                      'delete': 'destroy'})),
-    path('<slug:original_anime_name>/season-<int:pk>/episodes/',
+    path('anime/<slug:slug>/season-<int:pk>/episodes/',
          EpisodeModelViewSet.as_view({'get': 'list',
                                      'post': 'create'})),
-    path('<slug:original_anime_name>/season-<int:pk>/episode-<int:id>/',
+    path('anime/<slug:slug>/season-<int:pk>/episode-<int:id>/',
          EpisodeModelViewSet.as_view({'get': 'retrieve',
                                       'put': 'update',
                                       'delete': 'destroy'})),
-    path('<slug:original_anime_name>/season-<int:season>'
+    path('anime/<slug:slug>/season-<int:season>'
          '/episode-<int:episode>/download/',
          DownloadEpisodeViewSet.as_view({'get': 'list',
                                          'post': 'create'})),
-    path('<slug:original_anime_name>/season-<int:season>'
+    path('anime/<slug:slug>/season-<int:season>'
          '/episode-<int:episode>/download/<str:filename>/',
          DownloadEpisodeViewSet.as_view({'get': 'retrieve'})),
-    path('', include(anime_router.urls)),
-    path('<slug:original_anime_name>/movies/',
+    path('anime/<slug:slug>/movies/',
          AnimeMovieModelViewSet.as_view({'get': 'list',
                                          'post': 'create'})),
-    path('<slug:original_anime_name>/movie-<int:pk>/',
+    path('anime/<slug:slug>/movie-<int:pk>/',
          AnimeMovieModelViewSet.as_view({'get': 'retrieve',
                                          'delete': 'destroy',
                                          'put': 'update'})),
-    path('<slug:original_anime_name>/reviews/',
+    path('anime/<slug:slug>/reviews/',
          ReviewModelViewSet.as_view({'get': 'list',
                                      'post': 'create'})),
-    path('<slug:original_anime_name>/review-<int:pk>/',
+    path('anime/<slug:slug>/review-<int:pk>/',
          ReviewModelViewSet.as_view({'get': 'retrieve',
                                      'delete': 'destroy',
                                      'put': 'update'})),

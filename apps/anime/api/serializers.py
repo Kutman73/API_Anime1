@@ -34,62 +34,58 @@ class StatusAnimeSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer)
 
 
 class AnimeSerializers(serializers.ModelSerializer):
-    genre_anime = GenreSerializer(many=True, queryset=Genre.objects.all())
-    theme_anime = ThemeSerializer(many=True, queryset=Theme.objects.all())
-    producer_anime = ProducerSerializer(many=True, queryset=Producer.objects.all())
-    status_anime = StatusAnimeSerializer(many=False, queryset=StatusAnime.objects.all())
+    genre = GenreSerializer(many=True, queryset=Genre.objects.all())
+    theme = ThemeSerializer(many=True, queryset=Theme.objects.all())
+    producer = ProducerSerializer(many=True, queryset=Producer.objects.all())
+    status = StatusAnimeSerializer(many=False, queryset=StatusAnime.objects.all())
 
     class Meta:
         model = Anime
         fields = (
-            'id',
             'author',
-            'title_anime',
-            'cover_anime',
-            'original_anime_name',
-            'description_anime',
-            'producer_anime',
-            'genre_anime',
-            'theme_anime',
-            'status_anime',
-            'release_date_anime',
-            'creation_date',
-            'total_amount_seasons',
-            'total_amount_reviews',
+            'title',
+            'cover',
+            'slug',
+            'description',
+            'producer',
+            'genre',
+            'theme',
+            'status',
+            'release_date',
+            'amount_seasons',
+            'amount_reviews',
             'anime_rating',
         )
 
-    total_amount_seasons = serializers.SerializerMethodField()
-    total_amount_reviews = serializers.SerializerMethodField()
+    amount_seasons = serializers.SerializerMethodField()
+    amount_reviews = serializers.SerializerMethodField()
     anime_rating = serializers.SerializerMethodField()
 
     @staticmethod
     def get_anime_rating(ob):
-        return ob.reviews.all().aggregate(Avg('rating_for_anime'))['rating_for_anime__avg']
+        return ob.review.all().aggregate(Avg('rating'))['rating__avg']
 
     @staticmethod
-    def get_total_amount_seasons(ob):
-        return ob.seasons.all().aggregate(Sum('number'))['number__sum']
+    def get_amount_seasons(ob):
+        return ob.season_anime.all().aggregate(Sum('number'))['number__sum']
 
     @staticmethod
-    def get_total_amount_reviews(ob):
-        return ob.reviews.all().aggregate(Sum('number'))['number__sum']
+    def get_amount_reviews(ob):
+        return ob.review.all().aggregate(Sum('number'))['number__sum']
 
 
 class SeasonSerializers(serializers.ModelSerializer):
     class Meta:
         model = AnimeSeason
         fields = (
-            'id',
             'author',
-            'season_anime',
+            'anime',
             'season_number',
-            'producer_of_the_season',
-            'voiceover_of_the_season',
-            'season_title',
+            'producer',
+            'voice_acting',
+            'title',
             'amount_episodes',
-            'release_date_of_the_season',
-            'creation_date',
+            'release_date',
             'amount_episodes',
         )
 
@@ -97,42 +93,37 @@ class SeasonSerializers(serializers.ModelSerializer):
 
     @staticmethod
     def get_amount_episodes(ob):
-        return ob.anime_season.all().aggregate(Sum('number'))['number__sum']
+        return ob.episode_season.all().aggregate(Sum('number'))['number__sum']
 
 
 class EpisodeSerializers(serializers.ModelSerializer):
     class Meta:
         model = AnimeEpisode
         fields = (
-            'id',
             'author',
-            'title_episode',
-            'anime',
-            'anime_video',
-            'episode_duration',
-            'voice_acting_of_the_episode',
-            'anime_season',
+            'title',
+            'season',
+            'video',
+            'duration',
+            'voice_acting',
             'episode_number',
-            'release_date_of_the_episode',
-            'creation_date',
+            'release_date',
         )
 
 
-class AnimeMovieSerializers(serializers.ModelSerializer):
+class MovieSerializers(serializers.ModelSerializer):
     class Meta:
         model = AnimeMovie
         fields = (
-            'id',
             'author',
-            'title_movie',
-            'voice_acting_anime_of_the_movie',
-            'anime_movie',
-            'anime_movie_video',
-            'producer_anime_of_the_movie',
+            'anime',
+            'title',
+            'voice_acting',
+            'video',
+            'producer',
             'movie_number',
-            'movie_duration',
-            'release_date_of_the_movie',
-            'creation_date',
+            'duration',
+            'release_date',
         )
 
 
@@ -140,10 +131,8 @@ class ReviewsSerializers(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = (
-            'id',
             'author',
             'anime',
-            'rating_for_anime',
-            'review_text',
-            'creation_date',
+            'rating',
+            'comment',
         )

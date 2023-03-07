@@ -1,49 +1,80 @@
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.viewsets import *
-from apps.anime.services.services import get_file
+from rest_framework.viewsets import ViewSet, ModelViewSet
+from apps.anime.services.services import get_local_files
 from django.http import FileResponse
 from rest_framework.decorators import action
-from rest_framework.parsers import *
 from rest_framework import permissions
-from apps.anime.models import *
-from apps.anime.api.validateserializers import *
-from apps.anime.api.serializers import *
+from apps.anime.models import (
+    Anime,
+    AnimeSeason,
+    AnimeEpisode,
+    AnimeMovie,
+    Review,
+)
+from apps.anime.api.validateserializers import (
+    AnimeCreateSerializer,
+    AnimeUpdateSerializer,
+    SeasonCreateSerializer,
+    SeasonUpdateSerializer,
+    EpisodeCreateSerializer,
+    EpisodeUpdateSerializer,
+    MovieCreateSerializer,
+    MovieUpdateSerializer,
+    ReviewValidateSerializer,
+)
+from apps.anime.api.serializers import (
+    AnimeSerializers,
+    SeasonSerializers,
+    EpisodeSerializers,
+    MovieSerializers,
+    ReviewsSerializers,
+)
+from api_anime01 import settings
 import glob
 import os
 
 
 class DownloadEpisodeViewSet(ViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    project_url = "http://127.0.0.1:8000/media"
+
+    @staticmethod
+    def get_folder(**kwargs: dict) -> str:
+        folder_to_files_for_download = \
+            f"{settings.MEDIA_ROOT}/" \
+            f"{kwargs['slug']}/season-" \
+            f"{kwargs['season']}/episode-{kwargs['episode']}/"
+        return folder_to_files_for_download
 
     @action(detail=False, methods=['get'])
-    def list(self, **kwargs):
-        file_list = get_file(
-            path=settings.BASE_DIR /
-            f"media/{kwargs['original_anime_name']}/season-"
-            f"{kwargs['season']}/episode-{kwargs['episode']}/"
-        )
-        return Response(file_list)
+    def list(self, request, **kwargs: dict) -> Response:
+        files_to_download = self.get_folder(**kwargs)
+        return Response(get_local_files(files_to_download))
 
     @action(detail=True, methods=['get'])
-    def retrieve(self, **kwargs):
-        file_list = get_file(**kwargs)
+    def retrieve(self, request, **kwargs):
+        files_to_download = self.get_folder(**kwargs)
+        file_list = get_local_files(files_to_download)
         if len(file_list) == 0:
             return Response(status=status.HTTP_204_NO_CONTENT,
                             data={'detail': 'No file(s) were for this episode'})
-        file_path = f"{str(settings.MEDIA_ROOT)}/{str(kwargs['original_anime_name'])}" \
-                    f"/season-{kwargs['season']}/episode-{kwargs['episode']}/"
-        files = glob.glob(file_path + '*' + kwargs['filename'] + '*')
+        files = glob.glob(files_to_download + '*' + kwargs['filename'] + '*')
         if len(files) == 1:
             file_location = files[0]
+            file_name = kwargs['slug'] + '-episode-' + file_location[75:81]
             file_response = FileResponse(open(file_location, 'rb'))
             file_response['content_type'] = 'application/force-download'
-            file_response['Content-Disposition'] = 'attachment; filename=%s' % file_location[84]
+            file_response['Content-Disposition'] = 'attachment; filename=%s' % file_name
             return file_response
-        if len(files) > 1:
+        elif len(files) > 1:
             return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'detail': 'Several such files were found according to the search results, '
-                                            'please enter a more accurate file name'})
+                            data={'detail': 'Several such files were found according to the search '
+                                            'results, please enter a more accurate file name'})
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={'detail': "you didn't enter the file name "
+                                            "sequentially(in order from left to right"})
 
     @action(detail=False, methods=['post'])
     def create(self, request):
@@ -62,31 +93,31 @@ class DownloadEpisodeViewSet(ViewSet):
 class AnimeModelViewSet(ModelViewSet):
     queryset = Anime.objects.all()
     serializer_class = AnimeSerializers
-    lookup_field = 'original_anime_name'
+    lookup_field = 'slug'
 
     def create(self, request, **kwargs):
         serializer = AnimeCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         author = serializer.validated_data.get('author')
-        title_anime = serializer.validated_data.get('title_anime')
-        original_anime_name = serializer.validated_data.get('original_anime_name')
-        cover_anime = serializer.validated_data.get('cover_anime')
-        description_anime = serializer.validated_data.get('description_anime')
-        producer_anime = serializer.validated_data.get('producer_anime')
-        genre_anime = serializer.validated_data.get('genre_anime')
-        theme_anime = serializer.validated_data.get('theme_anime')
-        status_anime = serializer.validated_data.get('status_anime')
-        release_date_anime = serializer.validated_data.get('release_date_anime')
+        title = serializer.validated_data.get('title')
+        slug = serializer.validated_data.get('slug')
+        cover = serializer.validated_data.get('cover')
+        description = serializer.validated_data.get('description')
+        producer = serializer.validated_data.get('producer')
+        genre = serializer.validated_data.get('genre')
+        theme = serializer.validated_data.get('theme')
+        anime_status = serializer.validated_data.get('status')
+        release_date = serializer.validated_data.get('release_date')
         new_anime = Anime.objects.create(author_id=author,
-                                         title_anime=title_anime,
-                                         original_anime_name=original_anime_name,
-                                         cover_anime=cover_anime,
-                                         description_anime=description_anime,
-                                         status_anime_id=status_anime,
-                                         release_date_anime=release_date_anime)
-        new_anime.producer_anime.set(producer_anime)
-        new_anime.genre_anime.set(genre_anime)
-        new_anime.theme_anime.set(theme_anime)
+                                         title=title,
+                                         slug=slug,
+                                         cover=cover,
+                                         description=description,
+                                         status_id=anime_status,
+                                         release_date=release_date)
+        new_anime.producer.set(producer)
+        new_anime.genre.set(genre)
+        new_anime.theme.set(theme)
         new_anime.save()
         return Response(data={'message': 'Data received!',
                               'anime': AnimeSerializers(new_anime).data},
@@ -98,14 +129,14 @@ class AnimeModelViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         anime.author_id = serializer.validated_data.get('author')
         anime.title = serializer.validated_data.get('title')
-        anime.original_anime_name = serializer.validated_data.get('original_anime_name')
-        anime.cover_anime = serializer.validated_data.get('cover_anime')
-        anime.description_anime = serializer.validated_data.get('description_anime')
-        anime.producer_anime.set(serializer.validated_data.get('producer_anime'))
-        anime.genre_anime.set(serializer.validated_data.get('genre_anime'))
-        anime.theme_anime.set(serializer.validated_data.get('theme_anime'))
-        anime.status_anime_id = serializer.validated_data.get('status_anime')
-        anime.release_date_anime = serializer.validated_data.get('release_date_anime')
+        anime.slug = serializer.validated_data.get('slug')
+        anime.cover = serializer.validated_data.get('cover')
+        anime.description = serializer.validated_data.get('description')
+        anime.producer.set(serializer.validated_data.get('producer'))
+        anime.genre.set(serializer.validated_data.get('genre'))
+        anime.theme.set(serializer.validated_data.get('theme'))
+        anime.status_id = serializer.validated_data.get('status')
+        anime.release_date = serializer.validated_data.get('release_date')
         anime.save()
         return Response(data={'message': 'Data received!',
                               'anime': AnimeSerializers(anime).data},
@@ -119,36 +150,33 @@ class SeasonModelViewSet(ModelViewSet):
 
     def list(self, request, **kwargs):
         anime_season = self.queryset.filter(
-            season_anime__original_anime_name=kwargs['original_anime_name']
+            anime__slug=kwargs['slug']
         )
         serializer = self.serializer_class(anime_season, many=True)
         return Response(data=serializer.data)
 
     def create(self, request, **kwargs):
         anime = self.queryset.filter(
-            season_anime__original_anime_name=kwargs['original_anime_name']
+            anime__slug=kwargs['slug']
         )
         serializer = SeasonCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         anime.author = serializer.validated_data.get('author')
-        anime.season_anime = serializer.validated_data.get('season_anime')
+        anime.anime = serializer.validated_data.get('anime')
         anime.season_number = serializer.validated_data.get('season_number')
-        anime.voiceover_of_the_season = \
-            serializer.validated_data.get('voiceover_of_the_season')
-        anime.producer_of_the_season = \
-            serializer.validated_data.get('producer_of_the_season')
-        anime.season_title = serializer.validated_data.get('season_title')
-        anime.release_date_of_the_season = \
-            serializer.validated_data.get('release_date_of_the_season')
+        anime.voice_acting = serializer.validated_data.get('voice_acting')
+        anime.producer = serializer.validated_data.get('producer')
+        anime.title = serializer.validated_data.get('title')
+        anime.release_date = serializer.validated_data.get('release_date')
         new_season = AnimeSeason.objects.create(
             author_id=anime.author,
-            season_anime_id=anime.season_anime,
+            anime_id=anime.anime,
             season_number=anime.season_number,
-            season_title=anime.season_title,
-            release_date_of_the_season=anime.release_date_of_the_season
+            title=anime.title,
+            release_date=anime.release_date
         )
-        new_season.voiceover_of_the_season.set(anime.voiceover_of_the_season)
-        new_season.producer_of_the_season.set(anime.producer_of_the_season)
+        new_season.voice_acting.set(anime.voice_acting)
+        new_season.producer.set(anime.producer)
         new_season.save()
         return Response(data={'message': 'Data received!',
                               'anime': SeasonSerializers(new_season).data},
@@ -159,17 +187,12 @@ class SeasonModelViewSet(ModelViewSet):
         serializer = SeasonUpdateSerializer(data=request.data, context={'id': season.id})
         serializer.is_valid(raise_exception=True)
         season.author_id = serializer.validated_data.get('author')
-        season.season_anime_id = serializer.validated_data.get('season_anime')
+        season.anime_id = serializer.validated_data.get('anime')
         season.season_number_id = serializer.validated_data.get('season_number')
-        season.voiceover_of_the_season.set(
-            serializer.validated_data.get('voiceover_of_the_season')
-        )
-        season.producer_of_the_season.set(
-            serializer.validated_data.get('producer_of_the_season')
-        )
-        season.season_title = serializer.validated_data.get('season_title')
-        season.release_date_of_the_season = \
-            serializer.validated_data.get('release_date_of_the_season')
+        season.voice_acting.set(serializer.validated_data.get('voice_acting'))
+        season.producer.set(serializer.validated_data.get('producer'))
+        season.title = serializer.validated_data.get('title')
+        season.release_date = serializer.validated_data.get('release_date')
         season.save()
         return Response(data={'message': 'Data received!',
                               'anime': SeasonSerializers(season).data},
@@ -182,37 +205,33 @@ class EpisodeModelViewSet(ModelViewSet):
     lookup_field = 'id'
 
     def list(self, request, **kwargs):
-        anime_episode = self.queryset.filter(
-            anime_season_id=kwargs['pk']
+        episode = self.queryset.filter(
+            season_id=kwargs['pk']
         )
-        serializer = self.serializer_class(anime_episode, many=True)
+        serializer = self.serializer_class(episode, many=True)
         return Response(data=serializer.data)
 
     def create(self, request, **kwargs):
         anime = self.queryset.filter(
-            anime__original_anime_name=kwargs['original_anime_name']
+            season__anime__slug=kwargs['slug']
         )
         serializer = EpisodeCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         anime.author = serializer.validated_data.get('author')
-        anime.title_episode = serializer.validated_data.get('title_episode')
-        anime.anime = serializer.validated_data.get('anime')
-        anime.anime_video = serializer.validated_data.get('anime_video')
-        anime.voice_acting_anime_of_the_episode = \
-            serializer.validated_data.get('voice_acting_anime_of_the_episode')
-        anime.anime_season = serializer.validated_data.get('anime_season')
+        anime.title = serializer.validated_data.get('title')
+        anime.season = serializer.validated_data.get('season')
+        anime.video = serializer.validated_data.get('video')
+        anime.voice_acting = serializer.validated_data.get('voice_acting')
         anime.episode_number = serializer.validated_data.get('episode_number')
-        anime.release_date_of_the_episode = \
-            serializer.validated_data.get('release_date_of_the_episode')
+        anime.release_date = serializer.validated_data.get('release_date')
         new_episode = AnimeEpisode.objects.create(
             author_id=anime.author,
-            title_episode=anime.title_episode,
-            anime_id=anime.anime,
-            anime_video=anime.anime_video,
-            voice_acting_of_the_episode_id=anime.voice_acting_anime_of_the_episode,
-            anime_season_id=anime.anime_season,
+            title=anime.title,
+            season_id=anime.anime,
+            video=anime.video,
+            voice_acting_id=anime.voice_acting,
             episode_number=anime.episode_number,
-            release_date_of_the_episode=anime.release_date_of_the_episode
+            release_date=anime.release_date
         )
         new_episode.save()
         return Response(data={'message': 'Data received!',
@@ -224,15 +243,12 @@ class EpisodeModelViewSet(ModelViewSet):
         serializer = EpisodeUpdateSerializer(data=request.data, context={'id': episode.id})
         serializer.is_valid(raise_exception=True)
         episode.author_id = serializer.validated_data.get('author')
-        episode.title_episode = serializer.validated_data.get('title_episode')
-        episode.anime_id = serializer.validated_data.get('anime')
-        episode.anime_video = serializer.validated_data.get('anime_video')
-        episode.voice_acting_anime_of_the_episode_id = \
-            serializer.validated_data.get('voice_acting_anime_of_the_episode')
-        episode.anime_season_id = serializer.validated_data.get('anime_season')
+        episode.title = serializer.validated_data.get('title')
+        episode.season_id = serializer.validated_data.get('season')
+        episode.video = serializer.validated_data.get('video')
+        episode.voice_acting = serializer.validated_data.get('voice_acting')
         episode.episode_number = serializer.validated_data.get('episode_number')
-        episode.release_date_of_the_episode = \
-            serializer.validated_data.get('release_date_of_the_episode')
+        episode.release_date = serializer.validated_data.get('release_date')
         episode.save()
         return Response(data={'message': 'Data received!',
                               'episode': EpisodeSerializers(episode).data},
@@ -241,49 +257,41 @@ class EpisodeModelViewSet(ModelViewSet):
 
 class AnimeMovieModelViewSet(ModelViewSet):
     queryset = AnimeMovie.objects.all()
-    serializer_class = AnimeMovieSerializers
+    serializer_class = MovieSerializers
     lookup_field = 'pk'
 
     def list(self, request, **kwargs):
-        anime_movie = self.queryset.filter(
-            anime_movie__original_anime_name=kwargs['original_anime_name']
+        movie = self.queryset.filter(
+            anime__slug=kwargs['slug']
         )
-        serializer = self.serializer_class(anime_movie, many=True)
+        serializer = self.serializer_class(movie, many=True)
         return Response(data=serializer.data)
 
     def create(self, request, **kwargs):
         serializer = MovieCreateSerializer(data=request.data)
-        if not serializer.is_valid(raise_exception=True):
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'errors': serializer.errors})
-        anime = self.queryset.filter(
-            anime_movie__original_anime_name=kwargs['original_anime_name']
-        )
+        serializer.is_valid(raise_exception=True)
+        anime = self.queryset.filter(anime__slug=kwargs['slug'])
         anime.author = serializer.validated_data.get('author')
-        anime.title_movie = serializer.validated_data.get('title_movie')
-        anime.voice_acting_anime_of_the_movie = \
-            serializer.validated_data.get('voice_acting_anime_of_the_movie')
-        anime.anime_movie = serializer.validated_data.get('anime_movie')
-        anime.movie_duration = \
-            serializer.validated_data.get('movie_duration')
-        anime.producer_anime_of_the_movie = \
-            serializer.validated_data.get('producer_anime_of_the_movie')
-        anime.anime_movie_video = serializer.validated_data.get('anime_movie_video')
-        anime.release_date_of_the_movie = \
-            serializer.validated_data.get('release_date_of_the_movie')
+        anime.title = serializer.validated_data.get('title')
+        anime.voice_acting = serializer.validated_data.get('voice_acting')
+        anime.anime = serializer.validated_data.get('anime')
+        anime.duration = serializer.validated_data.get('duration')
+        anime.producer = serializer.validated_data.get('producer')
+        anime.video = serializer.validated_data.get('video')
+        anime.release_date = serializer.validated_data.get('release_date')
         new_movie = AnimeMovie.objects.create(
             author_id=anime.author,
-            title_movie=anime.title_movie,
-            voice_acting_anime_of_the_movie_id=anime.voice_acting_anime_of_the_movie,
-            anime_movie_id=anime.anime_movie,
-            movie_duration=anime.movie_duration,
-            anime_movie_video=anime.anime_movie_video,
-            release_date_of_the_movie=anime.release_date_of_the_movie
+            title=anime.title,
+            voice_acting_id=anime.voice_acting_anime_of_the_movie,
+            anime_id=anime.anime,
+            duration=anime.duration,
+            video=anime.video,
+            release_date=anime.release_date
         )
-        new_movie.producer_anime_of_the_movie.set(anime.producer_anime_of_the_movie)
+        new_movie.producer.set(anime.producer)
         new_movie.save()
         return Response(data={'message': 'Data received!',
-                              'anime_movie': AnimeMovieSerializers(new_movie).data},
+                              'anime_movie': MovieSerializers(new_movie).data},
                         status=status.HTTP_201_CREATED)
 
     def update(self, request, **kwargs):
@@ -291,21 +299,17 @@ class AnimeMovieModelViewSet(ModelViewSet):
         serializer = MovieUpdateSerializer(data=request.data, context={'id': movie.id})
         serializer.is_valid(raise_exception=True)
         movie.author_id = serializer.validated_data.get('author')
-        movie.title_movie = serializer.validated_data.get('title_movie')
-        movie.voice_acting_anime_of_the_movie_id = \
-            serializer.validated_data.get('voice_acting_anime_of_the_movie')
-        movie.anime_movie_id = serializer.validated_data.get('anime_movie')
-        movie.anime_movie_video = serializer.validated_data.get('anime_movie_video')
-        movie.movie_duration = serializer.validated_data.get('movie_duration')
-        movie.producer_anime_of_the_movie.set(
-            serializer.validated_data.get('producer_anime_of_the_movie')
-        )
+        movie.title = serializer.validated_data.get('title')
+        movie.voice_acting = serializer.validated_data.get('voice_acting')
+        movie.anime_id = serializer.validated_data.get('anime')
+        movie.video = serializer.validated_data.get('video')
+        movie.duration = serializer.validated_data.get('duration')
+        movie.producer.set(serializer.validated_data.get('producer'))
         movie.movie_number = serializer.validated_data.get('movie_number')
-        movie.release_date_of_the_movie = \
-            serializer.validated_data.get('release_date_of_the_movie')
+        movie.release_date = serializer.validated_data.get('release_date')
         movie.save()
         return Response(data={'message': 'Data received!',
-                              'anime': AnimeMovieSerializers(movie).data},
+                              'anime': MovieSerializers(movie).data},
                         status=status.HTTP_201_CREATED)
 
 
@@ -316,7 +320,7 @@ class ReviewModelViewSet(ModelViewSet):
 
     def list(self, request, **kwargs):
         anime_review = self.queryset.filter(
-            anime__original_anime_name=kwargs['original_anime_name']
+            anime__slug=kwargs['slug']
         )
         serializer = ReviewsSerializers(anime_review, many=True)
         return Response(data=serializer.data)
@@ -325,14 +329,13 @@ class ReviewModelViewSet(ModelViewSet):
         serializer = ReviewValidateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         author = serializer.validated_data.get('author')
-        review_text = serializer.validated_data.get('review_text')
-        rating_for_anime = \
-            serializer.validated_data.get('rating_for_anime')
+        comment = serializer.validated_data.get('comment')
+        rating = serializer.validated_data.get('rating')
         anime = serializer.validated_data.get('anime')
         new_review = Review.objects.create(
             author_id=author,
-            review_text=review_text,
-            rating_for_anime=rating_for_anime,
+            comment=comment,
+            rating=rating,
             anime_id=anime
         )
         new_review.save()
@@ -341,19 +344,18 @@ class ReviewModelViewSet(ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
     def update(self, request, **kwargs):
-        updating_review = self.queryset.filter(
-            anime__original_anime_name=kwargs['original_anime_name']
+        review = self.queryset.get(
+            anime__slug=kwargs['slug']
         )
         serializer = ReviewValidateSerializer(
-            data=request.data, context={'id': updating_review.id}
+            data=request.data, context={'id': review.id}
         )
         serializer.is_valid(raise_exception=True)
-        updating_review.author_id = serializer.validated_data.get('author')
-        updating_review.review_text = serializer.validated_data.get('review_text')
-        updating_review.rating_for_anime = \
-            serializer.validated_data.get('rating_for_anime')
-        updating_review.anime_id = serializer.validated_data.get('anime')
-        updating_review.save()
+        review.author_id = serializer.validated_data.get('author')
+        review.comment = serializer.validated_data.get('comment')
+        review.rating = serializer.validated_data.get('rating')
+        review.anime_id = serializer.validated_data.get('anime')
+        review.save()
         return Response(data={'message': 'Data received!',
-                              'review': ReviewsSerializers(updating_review).data},
+                              'review': ReviewsSerializers(review).data},
                         status=status.HTTP_201_CREATED)

@@ -16,36 +16,36 @@ class AuthorValidateSerializer(serializers.Serializer):
 
 
 class AnimeValidateSerializer(AuthorValidateSerializer):
-    title_anime = serializers.CharField(max_length=255)
-    original_anime_name = serializers.SlugField(max_length=20)
-    cover_anime = serializers.ImageField()
-    description_anime = serializers.CharField()
-    producer_anime = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    genre_anime = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    theme_anime = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    status_anime = serializers.IntegerField(min_value=1, max_value=3)
-    release_date_anime = serializers.DateField()
+    title = serializers.CharField(max_length=255)
+    slug = serializers.SlugField(max_length=20)
+    cover = serializers.ImageField()
+    description = serializers.CharField()
+    producer = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    genre = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    theme = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    status = serializers.IntegerField(min_value=1, max_value=3)
+    release_date = serializers.DateField()
 
     @staticmethod
-    def validate_producer_anime(producer_anime):
-        filtered_producers_anime = Producer.objects.filter(id__in=producer_anime)
-        if len(filtered_producers_anime) != len(producer_anime):
-            raise ValidationError('Producer anime not found!')
-        return producer_anime
+    def validate_producer(producer):
+        filtered_producers_anime = Producer.objects.filter(id__in=producer)
+        if len(filtered_producers_anime) != len(producer):
+            raise ValidationError('Producer not found!')
+        return producer
 
     @staticmethod
-    def validate_genre_anime(genre_anime):
-        filtered_genres_anime = Genre.objects.filter(id__in=genre_anime)
-        if len(filtered_genres_anime) != len(genre_anime):
-            raise ValidationError('Genre anime not found!')
-        return genre_anime
+    def validate_genre(genre):
+        filtered_genres_anime = Genre.objects.filter(id__in=genre)
+        if len(filtered_genres_anime) != len(genre):
+            raise ValidationError('Genre not found!')
+        return genre
 
     @staticmethod
-    def validate_theme_anime(theme_anime):
-        filtered_themes_anime = Theme.objects.filter(id__in=theme_anime)
-        if len(filtered_themes_anime) != len(theme_anime):
-            raise ValidationError('Producer anime not found!')
-        return theme_anime
+    def validate_theme(theme):
+        filtered_themes_anime = Theme.objects.filter(id__in=theme)
+        if len(filtered_themes_anime) != len(theme):
+            raise ValidationError('Producer not found!')
+        return theme
 
 
 class AnimeCreateSerializer(AnimeValidateSerializer):
@@ -56,10 +56,10 @@ class AnimeCreateSerializer(AnimeValidateSerializer):
         return title
 
     @staticmethod
-    def validate_original_anime_name(original_anime_name):
-        if Anime.objects.filter(original_anime_name=original_anime_name).count() > 0:
-            raise ValidationError('Original anime name must be unique')
-        return original_anime_name
+    def validate_slug(slug):
+        if Anime.objects.filter(original_anime_name=slug).count() > 0:
+            raise ValidationError('Slug must be unique')
+        return slug
 
 
 class AnimeUpdateSerializer(AnimeValidateSerializer):
@@ -72,51 +72,52 @@ class AnimeUpdateSerializer(AnimeValidateSerializer):
         return title
 
     @staticmethod
-    def validate_original_anime_name(self, original_anime_name):
+    def validate_slug(self, slug):
         if Anime.objects.filter(
-                original_anime_name=original_anime_name
+                original_anime_name=slug
         ).exclude(id=self.context.get('id')).count() > 0:
             raise ValidationError('Original anime name must be unique')
-        return original_anime_name
+        return slug
 
 
 class SeasonValidateSerializer(AuthorValidateSerializer):
-    season_anime = serializers.IntegerField(min_value=1)
+    season = serializers.IntegerField(min_value=1)
     season_number = serializers.IntegerField(min_value=1)
-    voiceover_of_the_season = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    producer_of_the_season = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    season_title = serializers.CharField(max_length=100)
-    release_date_of_the_season = serializers.DateField()
+    voice_acting = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    producer = serializers.ListField(
+        child=serializers.IntegerField(min_value=1))
+    title = serializers.CharField(max_length=100)
+    release_date = serializers.DateField()
 
     @staticmethod
-    def validate_season_anime(season_anime):
+    def validate_season(season):
         try:
-            Anime.objects.get(pk=season_anime)
+            Anime.objects.get(pk=season)
         except Anime.DoesNotExist:
             raise ValidationError('Anime not found!')
-        return season_anime
+        return season
 
     @staticmethod
-    def validate_voiceover_of_the_season(voiceover_of_the_season):
-        filtered_voice_actings = VoiceActing.objects.filter(id__in=voiceover_of_the_season)
-        if len(filtered_voice_actings) != len(voiceover_of_the_season):
+    def validate_voice_acting(voice_acting):
+        filtered_voice_actings = VoiceActing.objects.filter(id__in=voice_acting)
+        if len(filtered_voice_actings) != len(voice_acting):
             raise ValidationError('Voice acting not found!')
-        return voiceover_of_the_season
+        return voice_acting
 
     @staticmethod
-    def validate_producer_of_the_season(producer_of_the_season):
-        filtered_voice_actings = VoiceActing.objects.filter(id__in=producer_of_the_season)
-        if len(filtered_voice_actings) != len(producer_of_the_season):
+    def validate_producer(producer):
+        filtered_voice_actings = VoiceActing.objects.filter(id__in=producer)
+        if len(filtered_voice_actings) != len(producer):
             raise ValidationError('Producer not found!')
-        return producer_of_the_season
+        return producer
 
 
 class SeasonCreateSerializer(SeasonValidateSerializer):
     @staticmethod
-    def validate_season_title(season_title):
-        if AnimeSeason.objects.filter(season_title=season_title).count() > 0:
+    def validate_title(title):
+        if AnimeSeason.objects.filter(season_title=title).count() > 0:
             raise ValidationError('Season title must be unique')
-        return season_title
+        return title
 
     @staticmethod
     def validate_season_number(season_number):
@@ -127,13 +128,13 @@ class SeasonCreateSerializer(SeasonValidateSerializer):
 
 class SeasonUpdateSerializer(SeasonValidateSerializer):
     @staticmethod
-    def validate_season_title(self, season_title):
+    def validate_season_title(self, title):
         if AnimeSeason.objects.filter(
-                season_title=season_title).exclude(
+                season_title=title).exclude(
                     id=self.context.get('id')
         ).count() > 0:
             raise ValidationError('Season title must be unique')
-        return season_title
+        return title
 
     @staticmethod
     def validate_season_number(self, season_number):
@@ -145,22 +146,67 @@ class SeasonUpdateSerializer(SeasonValidateSerializer):
 
 
 class EpisodeValidateSerializer(AuthorValidateSerializer):
-    title_episode = serializers.CharField(max_length=55)
-    anime = serializers.IntegerField(min_value=1)
-    anime_video = serializers.FileField()
-    episode_duration = serializers.DurationField()
-    voice_acting_of_the_episode = serializers.IntegerField(min_value=1)
-    anime_season = serializers.IntegerField(min_value=1)
+    title = serializers.CharField(max_length=55)
+    season = serializers.IntegerField(min_value=1)
+    video = serializers.FileField()
+    duration = serializers.DurationField()
+    voice_acting = serializers.IntegerField(min_value=1)
     episode_number = serializers.IntegerField(min_value=1)
-    release_date_of_the_episode = serializers.DateField()
+    release_date = serializers.DateField()
 
     @staticmethod
-    def validate_voice_acting_anime_of_the_episode(voice_acting_anime_of_the_episode):
+    def validate_voice_acting(voice_acting):
         try:
-            VoiceActing.objects.get(pk=voice_acting_anime_of_the_episode)
+            VoiceActing.objects.get(pk=voice_acting)
         except VoiceActing.DoesNotExist:
             raise ValidationError('Voice acting not found!')
-        return voice_acting_anime_of_the_episode
+        return voice_acting
+
+    @staticmethod
+    def validate_season(season):
+        try:
+            AnimeSeason.objects.get(pk=season)
+        except Anime.DoesNotExist:
+            raise ValidationError('Anime not found!')
+        return season
+
+
+class EpisodeCreateSerializer(EpisodeValidateSerializer):
+    @staticmethod
+    def validate_title(title):
+        if AnimeEpisode.objects.filter(title_episode=title).count() > 0:
+            raise ValidationError('Title movie must be unique')
+        return title
+
+
+class EpisodeUpdateSerializer(EpisodeValidateSerializer):
+    @staticmethod
+    def validate_title(self, title):
+        if AnimeEpisode.objects.filter(
+                title_episode=title).exclude(
+                    id=self.context.get('id')
+        ).count() > 0:
+            raise ValidationError('Title movie must be unique')
+        return title
+
+
+class MovieValidateSerializer(AuthorValidateSerializer):
+    title = serializers.CharField(max_length=255)
+    voice_acting = serializers.IntegerField(min_value=1)
+    anime = serializers.IntegerField(min_value=1)
+    video = serializers.FileField()
+    duration = serializers.DurationField()
+    producer = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    movie_number = serializers.IntegerField(min_value=1)
+    release_date = serializers.DateField()
+
+    @staticmethod
+    def validate_voice_acting(voice_acting):
+        try:
+            VoiceActing.objects.get(pk=voice_acting)
+        except VoiceActing.DoesNotExist:
+            raise ValidationError('Voice acting not found!')
+        return voice_acting
 
     @staticmethod
     def validate_anime(anime):
@@ -170,83 +216,36 @@ class EpisodeValidateSerializer(AuthorValidateSerializer):
             raise ValidationError('Anime not found!')
         return anime
 
-
-class EpisodeCreateSerializer(EpisodeValidateSerializer):
     @staticmethod
-    def validate_title_episode(title_episode):
-        if AnimeEpisode.objects.filter(title_episode=title_episode).count() > 0:
-            raise ValidationError('Title movie must be unique')
-        return title_episode
-
-
-class EpisodeUpdateSerializer(EpisodeValidateSerializer):
-    @staticmethod
-    def validate_title_episode(self, title_episode):
-        if AnimeEpisode.objects.filter(
-                title_episode=title_episode).exclude(
-                    id=self.context.get('id')
-        ).count() > 0:
-            raise ValidationError('Title movie must be unique')
-        return title_episode
-
-
-class MovieValidateSerializer(AuthorValidateSerializer):
-    title_movie = serializers.CharField(max_length=255)
-    voice_acting_anime_of_the_movie = serializers.IntegerField(min_value=1)
-    anime_movie = serializers.IntegerField(min_value=1)
-    anime_movie_video = serializers.FileField()
-    movie_duration = serializers.DurationField()
-    producer_anime_of_the_movie = serializers.ListField(child=serializers.IntegerField(min_value=1))
-    movie_number = serializers.IntegerField(min_value=1)
-    release_date_of_the_movie = serializers.DateField()
-
-    @staticmethod
-    def validate_voice_acting_anime_of_the_movie(voice_acting_anime_of_the_movie):
-        try:
-            VoiceActing.objects.get(pk=voice_acting_anime_of_the_movie)
-        except VoiceActing.DoesNotExist:
-            raise ValidationError('Voice acting not found!')
-        return voice_acting_anime_of_the_movie
-
-    @staticmethod
-    def validate_anime_movie(anime_movie):
-        try:
-            Anime.objects.get(pk=anime_movie)
-        except Anime.DoesNotExist:
-            raise ValidationError('Anime not found!')
-        return anime_movie
-
-    @staticmethod
-    def validate_producer_anime_of_the_movie(producer_anime_of_the_movie):
-        filtered_producers_anime = Producer.objects.filter(id__in=producer_anime_of_the_movie)
-        if len(filtered_producers_anime) != len(producer_anime_of_the_movie):
+    def validate_producer(producer):
+        filtered_producers_anime = Producer.objects.filter(id__in=producer)
+        if len(filtered_producers_anime) != len(producer):
             raise ValidationError('Producer not found!')
-        return producer_anime_of_the_movie
+        return producer
 
 
 class MovieCreateSerializer(MovieValidateSerializer):
     @staticmethod
-    def validate_title_movie(title_movie):
-        if AnimeMovie.objects.filter(title_movie=title_movie).count() > 0:
+    def validate_title(title):
+        if AnimeMovie.objects.filter(title_movie=title).count() > 0:
             raise ValidationError('Title movie must be unique')
-        return title_movie
+        return title
 
 
 class MovieUpdateSerializer(MovieValidateSerializer):
     @staticmethod
-    def validate_title_movie(self, title_movie):
+    def validate_title(self, title):
         if AnimeMovie.objects.filter(
-                title_movie=title_movie).exclude(
+                title_movie=title).exclude(
                     id=self.context.get('id')
         ).count() > 0:
             raise ValidationError('Title movie must be unique')
-        return title_movie
+        return title
 
 
 class ReviewValidateSerializer(AuthorValidateSerializer):
-    review_text = serializers.CharField()
-    rating_for_anime = serializers.ChoiceField(choices=ANIME_RATING, allow_blank=False,
-                                               default=5.0)
+    comment = serializers.CharField()
+    rating = serializers.ChoiceField(choices=ANIME_RATING, allow_blank=False)
     anime = serializers.IntegerField(min_value=1)
 
     @staticmethod

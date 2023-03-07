@@ -2,11 +2,7 @@ from django.contrib import admin
 from .models import *
 
 
-class ArticleAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'original_anime_name': ('title_anime', )}
-
-
-admin.site.register(Anime, ArticleAdmin)
+admin.site.register(Anime)
 admin.site.register(Genre)
 admin.site.register(Theme)
 admin.site.register(Producer)
