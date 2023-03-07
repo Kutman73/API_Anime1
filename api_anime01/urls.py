@@ -7,11 +7,12 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('rest_framework.urls')),
-    path('api/v1/anime/', include('apps.anime.urls')),
+    path('', include('api_anime01.swagger')),
+    path('api/v1/', include('apps.anime.urls')),
     path('api/v1/users/', include('apps.users.urls')),
 ]
 
-if settings.DEBUG is True:
+if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += staticfiles_urlpatterns()
 
