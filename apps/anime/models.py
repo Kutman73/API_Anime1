@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum, Avg
 from django.core.validators import FileExtensionValidator
-from apps.anime.services.files_check import *
+from apps.anime.services.file_utils import *
 
 
 class Genre(models.Model):
