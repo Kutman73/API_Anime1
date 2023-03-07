@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
-from apps.anime.services.services import get_local_files
+from apps.anime.services.file_utils import SearchFiles
 from django.http import FileResponse
 from rest_framework.decorators import action
 from rest_framework import permissions
@@ -37,7 +37,6 @@ import os
 
 class DownloadEpisodeViewSet(ViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    project_url = "http://127.0.0.1:8000/media"
 
     @staticmethod
     def get_folder(**kwargs: dict) -> str:
@@ -50,12 +49,12 @@ class DownloadEpisodeViewSet(ViewSet):
     @action(detail=False, methods=['get'])
     def list(self, request, **kwargs: dict) -> Response:
         files_to_download = self.get_folder(**kwargs)
-        return Response(get_local_files(files_to_download))
+        return Response(SearchFiles.get_local_files(files_to_download))
 
     @action(detail=True, methods=['get'])
     def retrieve(self, request, **kwargs):
         files_to_download = self.get_folder(**kwargs)
-        file_list = get_local_files(files_to_download)
+        file_list = SearchFiles.get_local_files(files_to_download)
         if len(file_list) == 0:
             return Response(status=status.HTTP_204_NO_CONTENT,
                             data={'detail': 'No file(s) were for this episode'})
